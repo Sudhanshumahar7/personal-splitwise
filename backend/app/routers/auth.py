@@ -56,8 +56,8 @@ async def login(
         value=token,
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,  # Set to True in production (HTTPS)
+        samesite="none",
+        secure=True,
         path="/",
     )
 
@@ -73,5 +73,10 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/logout")
 async def logout(response: Response):
     """Clear the JWT cookie to log out."""
-    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(
+        key="access_token", 
+        path="/",
+        samesite="none",
+        secure=True
+    )
     return {"message": "Logged out successfully"}
