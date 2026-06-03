@@ -361,18 +361,18 @@ ALGORITHM=HS256
 
 ---
 
-## 12. Known Risks & Mitigations
+## 12. Known Limitations & Known Risks
 
-| Risk | Mitigation |
+| Limitation / Risk | Mitigation |
 |---|---|
 | WebSocket connection leak on browser close | Wrap all broadcast operations in `try...except WebSocketDisconnect`; clean up stale sockets |
 | Decimal rounding mismatches (e.g., ₹10 ÷ 3) | Use `NUMERIC(12, 2)` everywhere; backend detects remainder and stores in `rounding_remainder`; creator resolves manually |
 | JWT token not refreshed (1-hr expiry) | Redirect to `/login` on `401`; user re-authenticates (by design — finance app) |
-| Unauthorized expense edit/delete | Backend checks `paid_by_id == current_user.id` before allowing PUT/DELETE |
+| Unauthorized expense edit/delete | Backend enforces `paid_by_id == current_user.id` before allowing PUT/DELETE |
 
 ---
 
-## 13. Trade-offs Made
+## 13. Trade-offs
 
 | Decision | Rationale |
 |---|---|
@@ -384,22 +384,28 @@ ALGORITHM=HS256
 
 ---
 
-## 14. Recent Debugging & Fixes (Session 2)
+## 14. Changes Made During Implementation
+
 1. **Docker PostgreSQL Port Conflict**: 
-   - *Issue*: Local Postgres on Windows running on 5432 conflicted with Docker container.
-   - *Fix*: Mapped Docker Postgres to host port `5433:5432` in `docker-compose.yml` and updated `DATABASE_URL`.
-2. **Pydantic V2 Configuration Error**: 
-   - *Issue*: `.env` contained extra variables not in Pydantic schema, and strict mode rejected them.
-   - *Fix*: Added `model_config = SettingsConfigDict(extra='ignore')` to `app/core/config.py`. Also changed `CORS_ORIGINS` from unquoted string to a valid JSON-formatted list in `.env`.
-3. **TailwindCSS Build Error**:
-   - *Issue*: Vite build failed because `@apply border-border` was used in `index.css` without defining the `border` color variable in Tailwind configuration.
-   - *Fix*: Replaced `border-border` with standard Tailwind classes `border-gray-200 dark:border-slate-700` in `index.css`.
-4. **Passlib bcrypt Incompatibility**:
-   - *Issue*: Python backend crashed during signup with `AttributeError: module 'bcrypt' has no attribute '__about__'` due to `passlib` 1.7.4 incompatibility with `bcrypt >= 4.0`.
-   - *Fix*: Completely removed `passlib` dependency in `app/core/security.py` and replaced it with direct `bcrypt` library calls (`bcrypt.hashpw`, `bcrypt.checkpw`).
-5. **Vite IPv6 Localhost Proxy Issue**:
-   - *Issue*: Vite proxy failed to forward `/api` requests to Uvicorn backend because Node 18+ resolves `localhost` to IPv6 `[::1]`, but Uvicorn binds to IPv4 `127.0.0.1` by default.
-   - *Fix*: Updated Vite `proxy` target to explicitly use `http://127.0.0.1:8000` instead of `http://localhost:8000`.
-6. **WebSocket HTTP-Only Cookie Authentication**:
-   - *Issue*: WebSocket connections rejected with 403 Forbidden because JS cannot read HTTP-only cookies to pass as a query parameter (`?token=`), and Uvicorn closed the socket prematurely before accepting.
-   - *Fix*: Updated `chat.py` to use `access_token: str | None = Cookie(default=None)`. We must first `await websocket.accept()` in the route *before* closing with `4001` if authentication fails. Also removed the duplicate `accept()` from the WebSocket Manager.
+   - Local Postgres on Windows running on 5432 conflicted with Docker container. Mapped Docker Postgres to host port `5433:5432`.
+2. **Passlib bcrypt Incompatibility**:
+   - Python backend crashed during signup due to `passlib` incompatibility with modern `bcrypt`. Completely removed `passlib` dependency and replaced it with direct `bcrypt` library calls.
+3. **WebSocket HTTP-Only Cookie Authentication**:
+   - JS cannot read HTTP-only cookies to pass as a query parameter. Updated backend to extract token from the `Cookie` header (`access_token: str | None = Cookie(default=None)`).
+4. **Supabase IPv4 Pooler for Render**:
+   - Render could not connect to Supabase's direct connection string due to IPv6 limitations. Switched to Supabase's **Session Pooler** (IPv4) and added `+asyncpg` to the URL.
+5. **Cross-Origin Cookie Security (Vercel to Render)**:
+   - Modern browsers blocked the auth cookie post-login because Vercel and Render are different domains. Changed backend cookie policy from `SameSite=Lax`, `Secure=False` to `SameSite=None`, `Secure=True`.
+6. **Vercel React Router SPA Fallback**:
+   - Refreshing the `/login` page on Vercel resulted in a 404. Added a `vercel.json` file with a rewrite rule `{"source": "/(.*)", "destination": "/index.html"}` to enable client-side routing.
+
+---
+
+## 15. Prompts and AI Responses
+
+- **User Prompt**: "I am getting a DB connection error on Render: `socket.gaierror: [Errno -2] Name or service not known`"
+  - **AI Response**: Identified that the Supabase `aws-0` pooler domain was incorrect or utilizing IPv6 which Render couldn't resolve. Instructed the user to check the Supabase UI for the "Session pooler" IPv4 connection string.
+- **User Prompt**: "on login it auto matically bring back me to login page why?"
+  - **AI Response**: Analyzed the cross-origin request flow between Vercel (`.app`) and Render (`.com`). Identified that the browser was blocking the third-party HTTP-only cookie. Updated `app/routers/auth.py` to use `SameSite=None` and `Secure=True`.
+- **User Prompt**: "error during build: Rollup failed to resolve import @vercel/analytics/react"
+  - **AI Response**: Read the terminal logs, recognized that the Vercel cloud environment lacked the dependency, directly injected `@vercel/analytics` into `package.json`, and instructed the user to `git push`.

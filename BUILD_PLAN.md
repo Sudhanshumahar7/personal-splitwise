@@ -1,267 +1,97 @@
-# PersonalSplitWise — Build Plan (24-Hour Execution)
+# PersonalSplitWise — Build Plan
 
-This build plan outlines the development path for a **24-hour MVP sprint** of PersonalSplitWise — a debt-tracking app for roommates and friend groups.
+## 1. Product Research
 
-> **Deadline**: 24 hours from project start.
-> **All decisions are finalized.** See `AI_CONTEXT.md` for full specification.
+### How you studied Splitwise
+- Analyzed the core user journey of adding group expenses and dividing them among friends.
+- Reviewed the Splitwise UI to identify the most critical views: the dashboard (who owes whom) and the group ledger (chronological expenses).
+- Evaluated pain points in the original app, specifically the lack of contextual discussion around disputed expenses.
 
----
+### What you learned
+- The value of an expense splitter lies in trust and transparency; absolute precision in math is paramount.
+- Users want to add expenses rapidly without complex accounting rules or bloated UI.
+- Real-time discussion about an expense often happens off-app (e.g., WhatsApp), indicating a missed opportunity for context-specific chat.
 
-## 1. Product Scope & Core Workflows
+### What workflows you identified
+1. **Authentication & Group Creation**: Creating secure accounts and forming groups with specific roommates.
+2. **Adding Expenses**: Splitting bills using multiple methods (Equal, Exact, Percent, Share) across specific subsets of users.
+3. **Viewing Balances**: Checking net balances across all groups and within specific groups to prioritize repayments.
+4. **Settlements**: Recording manual peer-to-peer payments to clear outstanding debts.
 
-### Target Persona
-- **Primary Persona**: Roommates and friend groups splitting daily expenses.
-- **UX Core Focus**: Rapid expense entry, clean responsive layout (desktop-first, usable on mobile browser).
+### What product assumptions you made
+- Users primarily split expenses in a single local currency (assumed INR for this MVP).
+- Users prefer direct peer-to-peer settlements rather than a centralized clearing house.
+- Not everyone in a group is involved in every single expense (subset splitting is mandatory).
 
-### Core Workflows (Priority Order)
-1. **Authentication**: JWT-based sign up, login, and secure session (1-hr token, HTTP-only cookie).
-2. **Group Management**: Group creation, member management with `CREATOR` / `ADMIN` / `MEMBER` role model.
-3. **Expense Splitting**: Add/edit/delete expenses with 4 split methods (Equal, Exact, Percent, Share) over member subsets.
-4. **Net Balance Dashboard**: Dual-view — aggregate net balance across all groups + per-group breakdown.
-5. **Settle Up**: Record manual peer-to-peer payments to clear debts.
-6. **Real-time Chat**: WebSocket chat room inside each individual expense drawer.
+## 2. Architecture
 
----
+### Tech stack
+- **Frontend**: React, Vite, Tailwind CSS v3, Zustand for state management, React Router.
+- **Backend**: Python, FastAPI, SQLAlchemy 2.0 (async), WebSockets for real-time chat.
+- **Database**: PostgreSQL (ACID compliance, `NUMERIC` precision support).
 
-## 2. MVP vs. Out-of-Scope Features
+### Database schema
+- `users`: Core identity (ID, name, email, hashed_password).
+- `groups`: Group metadata.
+- `group_members`: M:M junction mapping users to groups with Roles (CREATOR, ADMIN, MEMBER).
+- `expenses`: Expense metadata (amount, split_method, paid_by_id, rounding_remainder).
+- `expense_splits`: Precise owed amounts per user per expense.
+- `settlements`: Payer, payee, and amount.
+- `chat_messages`: WebSocket message history per expense.
 
-### In-Scope (MVP)
-- JWT authentication (HTTP-only cookie, 1-hour expiry).
-- Group creation + member management with delegated `ADMIN` authority.
-- Only **already-registered users** can be added to groups (no email invitations).
-- Expense splitting across **subsets** of group members via all 4 methods.
-- Rounding remainder handling — flagged and visible to group creator for manual resolution.
-- Edit/delete permissions: **payer only** (`paid_by_id`).
-- Dual dashboard: aggregate net + per-group balance cards.
-- Manual settlement recording (peer-to-peer, no payment gateway).
-- WebSocket real-time chat per expense.
-- **Dark mode + Light mode** (Tailwind CSS v3, toggle saved to `localStorage`).
-- Responsive web design (desktop-first; not a native mobile app).
+### API design
+- RESTful JSON endpoints for CRUD operations (Auth, Groups, Expenses, Settlements).
+- Secure Authentication using JWT stored in HTTP-only cookies (`SameSite=None`, `Secure=True` for cross-origin cloud deployments).
+- Dedicated WebSocket endpoint (`/ws/expenses/{id}`) for bi-directional real-time chat within an expense drawer.
 
-### Out-of-Scope
-- **Multi-currency**: Hardcoded to INR (₹).
-- **Email Invitations**: No invite links; registered-only.
-- **OCR Receipt Scanning**: No image parsing.
-- **Recurring Expenses**: No scheduled billing.
-- **Complex Debt Simplification**: No graph minimization. Direct peer-to-peer only.
-- **Mobile Native / PWA**: Responsive web only.
+### Frontend structure
+- Single Page Application (SPA) architecture.
+- **Zustand** global store for handling Authentication sessions and UI state (Toasts, Dark Mode).
+- **React Router DOM** for client-side navigation, backed by `vercel.json` rewrite rules to prevent 404s on page refresh.
 
----
+### Deployment approach
+- **Vercel**: Hosts the static React frontend via GitHub integration.
+- **Render**: Hosts the ASGI FastAPI backend (handles WebSockets and REST).
+- **Supabase**: Managed PostgreSQL database utilizing the IPv4 Session Pooler connection string for compatibility with Render.
 
-## 3. Architecture & Tech Stack — FINAL
+## 3. AI Collaboration Process
 
-| Layer | Technology |
-|---|---|
-| **Backend Framework** | FastAPI (Python) — async HTTP + native WebSockets |
-| **Database** | PostgreSQL — ACID, `NUMERIC(12,2)` precision |
-| **ORM** | SQLAlchemy 2.0 (async session) + asyncpg driver |
-| **Auth** | PyJWT + passlib[bcrypt] — JWT in HTTP-only cookie, 1-hr expiry |
-| **WebSockets** | `/ws/expenses/{expense_id}` — in-memory `ConnectionManager` |
-| **Local DB** | Docker Compose (PostgreSQL container) |
-| **Frontend** | React + Vite |
-| **Styling** | Tailwind CSS **v3** (dark mode via `dark:` variant + toggle) |
-| **State** | Zustand |
-| **Routing** | react-router-dom v6 |
-| **Deployment** | Vercel (frontend) · Render (backend) · Supabase (PostgreSQL) |
+### How you instructed the AI
+- Provided a clear 24-hour MVP sprint goal with strict architectural boundaries (FastAPI backend + React frontend).
+- Mandated the creation and continuous updating of `AI_CONTEXT.md` as the single source of truth for the project.
+- Provided specific debugging constraints and logs when deploying to cloud platforms (e.g., pasting Render startup logs, Supabase connection string formats, Vercel build errors).
 
----
+### What questions the AI asked
+- The AI asked for clarification on the exact Supabase UI configuration, specifically requesting the user to check if "Connection Pooling" was enabled and what format the connection string was in.
+- The AI asked the user to manually run specific `npm install` commands in their terminal when the background execution environment lacked the correct PATH to Node.js.
 
-## 4. Data Model & Database Schema
+### How you answered
+- Provided text dumps and screenshots of the Supabase dashboard (revealing the UI update from checkboxes to radio buttons for "Session pooler").
+- Confirmed Vercel live URLs so the AI could diagnose cross-origin CORS and cookie rejection issues dynamically.
+- Pasted exact terminal output logs (e.g., `Rollup failed to resolve import`) so the AI could pinpoint missing dependencies in `package.json`.
 
-All financial data uses `NUMERIC(12, 2)`. Balances computed dynamically via SQL aggregates — no cached state.
+### How the plan evolved
+- Initially, local development was the primary focus, but as deployment commenced, the plan dynamically evolved to include necessary cloud-platform architecture fixes.
+- This included switching to an IPv4 Session Pooler for Supabase (due to Render's network restrictions) and upgrading the JWT cookie policy from `SameSite=Lax` to `SameSite=None` with `Secure=True` to support cross-domain authentication between Vercel and Render.
 
-| Table | Purpose |
-|---|---|
-| `users` | Registered users (email, hashed_password) |
-| `groups` | Group metadata (name, description, created_by) |
-| `group_members` | Many-to-many with `role` column: `CREATOR`, `ADMIN`, `MEMBER` |
-| `expenses` | Expense metadata (who paid, amount, split method, rounding_remainder) |
-| `expense_splits` | Per-member owed amounts + original input audit field |
-| `settlements` | Manual peer-to-peer payment records |
-| `chat_messages` | WebSocket message history per expense |
+### How AI_CONTEXT.md was maintained
+- The AI was instructed to treat `AI_CONTEXT.md` as a living blueprint.
+- Every major architectural decision, database schema update, and deployment breakthrough (like Vercel React Router fallback rules and Cross-Origin cookie configurations) was documented to ensure the file could be used by another developer to recreate the exact same application.
 
-### Key Business Rules
-- `rounding_remainder` on `expenses` — stores leftover paisa when split is uneven; creator resolves manually.
-- `group_members.role` — `CREATOR` can promote to `ADMIN`; both can add/remove `MEMBER`s.
-- Edit/delete expense → only `paid_by_id` user.
+## 4. Tradeoffs
 
----
+### What you simplified
+- Simplified the settlement process to direct manual peer-to-peer entry rather than integrating a third-party payment gateway (like Stripe or PayPal).
 
-## 5. 24-Hour Execution Timeline
+### What you hardcoded
+- Hardcoded the currency to INR (₹) globally to avoid real-time exchange rate complexity and multi-currency database columns.
 
-### ⏱ Phase 1 (Hours 0–4): Project Scaffolding & Dev Environment
-- [ ] Create `docker-compose.yml` for PostgreSQL local dev container.
-- [ ] Initialize FastAPI backend project structure:
-  - `app/main.py`, `app/models/`, `app/routers/`, `app/schemas/`, `app/core/`, `app/services/`
-- [ ] Configure SQLAlchemy async engine + session factory.
-- [ ] Write all SQLAlchemy ORM models (all 7 tables).
-- [ ] Initialize Vite + React frontend project.
-- [ ] Install and configure Tailwind CSS v3 with dark mode.
-- [ ] Install Zustand, react-router-dom.
-- [ ] Set up page routing skeleton (`/login`, `/signup`, `/dashboard`, `/groups/:id`).
+### What you avoided
+- Avoided complex graph-minimization algorithms ("Debt Simplification"). Direct peer-to-peer tracking was chosen to ensure 100% accurate, traceable ledgers for the MVP.
+- Avoided email-based invitations and SMTP server configuration; users must be pre-registered on the platform before being added to a group.
 
----
-
-### ⏱ Phase 2 (Hours 4–9): Authentication & Group Management
-
-#### Backend
-- [ ] Implement `passlib[bcrypt]` password hashing utility.
-- [ ] Implement JWT creation and verification (`PyJWT`, 1-hr expiry, HTTP-only cookie).
-- [ ] `POST /api/auth/signup` — register user.
-- [ ] `POST /api/auth/login` — authenticate, set JWT cookie.
-- [ ] `GET /api/auth/me` — return current user from token.
-- [ ] `POST /api/auth/logout` — clear JWT cookie.
-- [ ] Auth dependency (`get_current_user`) for route protection → returns `401` if invalid/expired.
-- [ ] `GET /api/groups` — list user's groups.
-- [ ] `POST /api/groups` — create group, assign `CREATOR` role.
-- [ ] `GET /api/groups/{group_id}` — group detail + member roster.
-- [ ] `POST /api/groups/{group_id}/members` — add registered user by email (CREATOR/ADMIN only).
-- [ ] `DELETE /api/groups/{group_id}/members/{user_id}` — remove member (CREATOR/ADMIN only).
-- [ ] `PATCH /api/groups/{group_id}/members/{user_id}/role` — promote to ADMIN (CREATOR only).
-
-#### Frontend
-- [ ] Login page UI (`/login`) — email + password form, error handling.
-- [ ] Signup page UI (`/signup`) — name, email, password form.
-- [ ] Zustand auth store — `user`, `isAuthenticated`, `login()`, `logout()`.
-- [ ] Protected route wrapper — redirect to `/login` on `401`.
-- [ ] Dashboard page skeleton (`/dashboard`) — groups list + "Create Group" button.
-- [ ] Create Group modal.
-- [ ] Group detail page skeleton (`/groups/:id`) — member roster panel.
-- [ ] Add Member modal (search registered users by email).
-
----
-
-### ⏱ Phase 3 (Hours 9–16): Expenses, Splits & Balances
-
-#### Backend — Split Engine
-- [ ] Implement the 4 split calculation engines (pure functions, easily testable):
-  - `split_equal(total, member_count)` → `[owed_amount, ...]` + remainder
-  - `split_exact(total, amounts_dict)` → validate sum == total
-  - `split_percent(total, percents_dict)` → validate sum == 100%, compute amounts
-  - `split_share(total, shares_dict)` → proportional amounts + remainder
-- [ ] Remainder detection: store in `expenses.rounding_remainder`, log which user it's attributed to.
-- [ ] `pytest` unit tests for all 4 engines — verify penny-perfect sums, rounding edge cases.
-
-#### Backend — Expense APIs
-- [ ] `GET /api/groups/{group_id}/expenses` — paginated chronological list.
-- [ ] `POST /api/expenses` — create expense, run split engine, write `expense_splits`.
-- [ ] `PUT /api/expenses/{expense_id}` — edit (payer only), rewrite splits.
-- [ ] `DELETE /api/expenses/{expense_id}` — delete (payer only), cascade splits + chat.
-- [ ] `GET /api/groups/{group_id}/balances` — dynamic balance matrix (SQL aggregates).
-- [ ] `GET /api/dashboard/summary` — aggregate net + per-group balances for dashboard.
-- [ ] `POST /api/settlements` — record manual payment.
-
-#### Frontend — Ledger & Forms
-- [ ] Dashboard cards: aggregate net balance (big number) + per-group balance list.
-- [ ] Group ledger timeline (`/groups/:id`) — chronological expense + settlement entries.
-- [ ] Group balance panel — who owes whom inside this group.
-- [ ] Add/Edit Expense modal:
-  - Description, total amount, paid-by dropdown.
-  - Split method selector (Equal / Exact / Percent / Share).
-  - Member subset multi-select (only group members).
-  - Dynamic split input fields based on method.
-  - Client-side validation (sum checks for Exact/Percent).
-  - Rounding remainder alert (shown to creator if present).
-- [ ] Settle Up modal — payer → payee, amount.
-
----
-
-### ⏱ Phase 4 (Hours 16–21): WebSocket Chat & Expense Drawer
-
-#### Backend
-- [ ] `ConnectionManager` class — `Dict[str, Set[WebSocket]]` (expense_id → connections).
-- [ ] `WS /ws/expenses/{expense_id}` — connect, receive, save to DB, broadcast to room.
-- [ ] Handle `WebSocketDisconnect` gracefully — remove stale connections.
-- [ ] `GET /api/expenses/{expense_id}/messages` — fetch historical messages.
-
-#### Frontend
-- [ ] Expense Details Drawer component (triggered from ledger row click):
-  - Split breakdown table.
-  - Rounding remainder banner (visible to creator if `rounding_remainder > 0`).
-  - WebSocket chat section.
-- [ ] Chat section:
-  - Fetch historical messages on drawer open (`GET /api/expenses/{expense_id}/messages`).
-  - Open WS connection on drawer open; close on drawer close.
-  - Message list (sender name, text, timestamp).
-  - Send message input + button.
-  - Auto-scroll to latest message.
-
----
-
-### ⏱ Phase 5 (Hours 21–24): Polish, Deploy & Audit
-
-#### Polish
-- [ ] Dark mode toggle button (header) — saves preference to `localStorage`.
-- [ ] Loading states and skeleton loaders on all data-fetching components.
-- [ ] Error toast notifications (API errors, WS errors, form validation failures).
-- [ ] Empty state illustrations/messages for groups list, expense list.
-
-#### Deployment
-- [ ] Backend: push to GitHub, deploy to **Render** (set env vars: `DATABASE_URL`, `SECRET_KEY`, etc.).
-- [ ] Database: provision **Supabase** PostgreSQL instance, run schema migrations.
-- [ ] Frontend: push to GitHub, deploy to **Vercel** (set `VITE_API_URL` env var).
-- [ ] Smoke test end-to-end on deployed URLs.
-
-#### Final Audit
-- [ ] Run `pytest` split engine tests — all pass.
-- [ ] Manual WebSocket test: 2 parallel browser sessions in same expense drawer.
-- [ ] API security check: unauthenticated requests to `/api/groups/` → `401 Unauthorized`.
-- [ ] Update `walkthrough.md` with deployment steps and architecture summary.
-
----
-
-## 6. Deployment Plan — FINAL
-
-| Layer | Platform | Notes |
-|---|---|---|
-| **Frontend** | **Vercel** | GitHub integration, auto-deploy, global edge CDN |
-| **Backend API** | **Render** | Python/FastAPI native support, WebSocket compatible |
-| **Database** | **Supabase** | Managed PostgreSQL, PgBouncer connection pooler |
-
-### Environment Variables
-```bash
-# Backend (.env on Render)
-DATABASE_URL=postgresql+asyncpg://<user>:<pass>@<supabase-host>:5432/<db>
-SECRET_KEY=<strong-random-256-bit-key>
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-ALGORITHM=HS256
-
-# Frontend (.env on Vercel)
-VITE_API_URL=https://<your-render-backend-url>
-```
-
----
-
-## 7. Testing Plan
-
-| Test | Method |
-|---|---|
-| Split engine correctness | `pytest` unit tests — all 4 methods, rounding edge cases |
-| Real-time chat | Manual: 2 parallel browser sessions (standard + incognito) in same expense drawer |
-| Auth security boundary | Postman / `TestClient` — verify `401` on all protected routes without JWT |
-| Edit/delete permission | Attempt edit as non-payer → verify `403 Forbidden` |
-| Dashboard balance accuracy | Cross-check UI numbers against direct SQL queries |
-
----
-
-## 8. Known Risks & Mitigations
-
-| Risk | Mitigation |
-|---|---|
-| WS connection leak on browser close | `try...except WebSocketDisconnect` wrapping all broadcasts; remove from room on disconnect |
-| Rounding/decimal mismatch (₹10 ÷ 3) | `NUMERIC(12,2)` everywhere; backend stores remainder; creator resolves manually |
-| JWT expiry mid-session | `401` interceptor on frontend → redirect to `/login`; by design for finance app |
-| Unauthorized expense edit/delete | Backend enforces `paid_by_id == current_user.id`; returns `403 Forbidden` |
-| Supabase connection limits | Use PgBouncer pooler URL (transaction mode) to prevent connection exhaustion |
-
----
-## 9. Trade-offs Made
-
-| Decision | Rationale |
-|---|---|
-| Dynamic balances (no cache) | Zero stale state; integrity > read performance for MVP |
-| Direct peer-to-peer settlements | Out-of-scope graph algorithms; simple and correct for 24-hr deadline |
-| HTTP-only cookie JWT | XSS-resistant; finance security requirement |
-| 1-hour token expiry (no silent refresh) | Security-first; re-login is acceptable for finance context |
-| Subset expense splits | Real-world accuracy; not all members share every expense |
-| Registered-only member invites | Avoids email service complexity; saves ~4 hours of development time |
+### What you would improve with more time
+- Implement complex debt simplification (graph minimization) to reduce the total number of transactions needed to settle a group.
+- Add push notifications or email alerts for new expenses and chat messages.
+- Integrate receipt scanning via OCR to automatically parse line items and assign them to specific users.
+- Add multi-currency support with live exchange rate fetching for international trips.
