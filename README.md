@@ -52,7 +52,7 @@ docker compose up -d
 ### 2. Backend Setup
 ```bash
 cd backend
-python -m venv venv
+py -3.11 -m venv venv
 
 # Windows
 venv\Scripts\activate
