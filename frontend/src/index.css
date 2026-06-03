@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base Styles ────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-slate-700;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100;
+    @apply font-sans;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-slate-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-slate-500;
+  }
+}
+
+/* ── Component Utilities ────────────────────────────────────────────────── */
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm;
+  }
+
+  /* Glass card */
+  .card-glass {
+    @apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-gray-100/50 dark:border-slate-700/50 shadow-sm;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-600 hover:bg-brand-700 text-white focus:ring-brand-500 shadow-sm hover:shadow-md active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 focus:ring-gray-400;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-500 hover:bg-red-600 text-white focus:ring-red-400 shadow-sm;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-400 focus:ring-gray-300;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-lg;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900/50
+           text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           transition-all duration-150 text-sm;
+  }
+
+  .input-error {
+    @apply border-red-400 focus:ring-red-400;
+  }
+
+  /* Label */
+  .label {
+    @apply block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-green {
+    @apply badge bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400;
+  }
+
+  .badge-red {
+    @apply badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400;
+  }
+
+  .badge-blue {
+    @apply badge bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-400;
+  }
+
+  .badge-gray {
+    @apply badge bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400;
+  }
+
+  /* Amount display */
+  .amount-positive {
+    @apply text-emerald-600 dark:text-emerald-400 font-semibold;
+  }
+
+  .amount-negative {
+    @apply text-red-600 dark:text-red-400 font-semibold;
+  }
+
+  .amount-neutral {
+    @apply text-gray-500 dark:text-slate-400 font-medium;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-gray-100 dark:border-slate-700;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-40 animate-fade-in;
+  }
+
+  /* Drawer overlay */
+  .drawer-panel {
+    @apply fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl z-50 animate-slide-right overflow-y-auto;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    @apply bg-gray-200 dark:bg-slate-700 rounded animate-pulse;
+  }
+
+  /* Role badge */
+  .role-badge-creator {
+    @apply badge bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-400;
+  }
+
+  .role-badge-admin {
+    @apply badge bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400;
+  }
+
+  .role-badge-member {
+    @apply badge bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300;
+  }
+}
