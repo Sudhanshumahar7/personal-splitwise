@@ -134,10 +134,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-
-        <p className="text-center text-xs text-gray-400 dark:text-slate-600 mt-6">
-          🔒 Your session expires after 1 hour for security
-        </p>
       </div>
     </div>
   );
